@@ -800,6 +800,210 @@ public class EnrollmentCourseServiceTests
         result.RecentEnrollments.First().CourseName.Should().Be("Khóa học Y");
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_22]
+    // [Mục đích: Đảm bảo GetEnrollmentInCourseAsync trả về danh sách khi teacher hợp lệ]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetEnrollmentInCourseAsync_ShouldReturnEnrollments_WhenTeacherOwnsCourse()
+    {
+        // Arrange
+        var teacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var studentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId, Title = "Khóa học",
+                Teacher = new Teacher { User = new User { Id = teacherId } }
+            });
+        // Service dùng else-if: teacher khớp → vẫn phải là admin
+        _adminRepositoryMock
+            .Setup(r => r.IsAdminExistAsync(teacherId))
+            .ReturnsAsync(true);
+        _enrollmentRepositoryMock
+            .Setup(r => r.GetEnrollmentInCourseAsync(courseId))
+            .ReturnsAsync(new List<Enrollment_course>
+            {
+                new() {
+                    StudentId = studentId,
+                    CourseId = courseId,
+                    EnrolledAt = DateTime.UtcNow,
+                    Progress = 50,
+                    Status = "active",
+                    Student = new Student { User = new User { FullName = "Học viên A" } }
+                }
+            });
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetEnrollmentInCourseAsync(teacherId, courseId);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Progress.Should().Be(50);
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_23]
+    // [Mục đích: Đảm bảo CreateEnrollmentAsync báo lỗi khi course không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task CreateEnrollmentAsync_ShouldThrowKeyNotFoundException_WhenCourseDoesNotExist()
+    {
+        // Arrange
+        var courseId = Guid.NewGuid().ToString();
+        var studentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateEnrollmentAsync(courseId, studentId);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage($"Course with id: {courseId} not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_24]
+    // [Mục đích: Đảm bảo GetEnrollmentByIdAsync báo lỗi khi course không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetEnrollmentByIdAsync_ShouldThrowKeyNotFoundException_WhenCourseDoesNotExist()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var enrollmentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetEnrollmentByIdAsync(userId, courseId, enrollmentId);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage($"Course with id: {courseId} not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_25]
+    // [Mục đích: Đảm bảo GetEnrollmentByIdAsync báo lỗi khi user không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetEnrollmentByIdAsync_ShouldThrowUnauthorized_WhenUserDoesNotExist()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var enrollmentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(true);
+        _userRepositoryMock
+            .Setup(r => r.IsUserExistAsync(userId))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetEnrollmentByIdAsync(userId, courseId, enrollmentId);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_26]
+    // [Mục đích: Đảm bảo GetEnrollmentByIdAsync báo lỗi khi courseId không khớp enrollment]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetEnrollmentByIdAsync_ShouldThrowKeyNotFoundException_WhenCourseIdMismatch()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var differentCourseId = Guid.NewGuid().ToString(); // course khác
+        var enrollmentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(true);
+        _userRepositoryMock
+            .Setup(r => r.IsUserExistAsync(userId))
+            .ReturnsAsync(true);
+        _enrollmentRepositoryMock
+            .Setup(r => r.GetEnrrollmentByIdAsync(enrollmentId))
+            .ReturnsAsync(new Enrollment_course
+            {
+                Id = enrollmentId,
+                CourseId = differentCourseId, // khác courseId
+                StudentId = userId
+            });
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetEnrollmentByIdAsync(userId, courseId, enrollmentId);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage($"Enrollment with id: {enrollmentId} not found in course with id: {courseId}");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_ECS_27]
+    // [Mục đích: Đảm bảo GetEnrollmentByIdAsync báo lỗi khi user không sở hữu enrollment]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetEnrollmentByIdAsync_ShouldThrowUnauthorized_WhenUserDoesNotOwnEnrollment()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var otherUserId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var enrollmentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(true);
+        _userRepositoryMock
+            .Setup(r => r.IsUserExistAsync(userId))
+            .ReturnsAsync(true);
+        _enrollmentRepositoryMock
+            .Setup(r => r.GetEnrrollmentByIdAsync(enrollmentId))
+            .ReturnsAsync(new Enrollment_course
+            {
+                Id = enrollmentId,
+                CourseId = courseId,
+                StudentId = otherUserId,
+                Student = new Student { User = new User { Id = otherUserId } } // khác userId
+            });
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetEnrollmentByIdAsync(userId, courseId, enrollmentId);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not authorized to view this enrollment");
+    }
+
     private EnrollmentCourseService CreateService()
     {
         return new EnrollmentCourseService(

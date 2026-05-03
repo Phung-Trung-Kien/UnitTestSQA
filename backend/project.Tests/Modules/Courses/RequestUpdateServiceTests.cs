@@ -256,5 +256,125 @@ public class RequestUpdateServiceTests
             _lessonRepositoryMock.Object,
             _teacherRepositoryMock.Object);
     }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_RUS_07]
+    // [Mục đích: Đảm bảo CreateRequestUpdateAsync báo lỗi khi teacher không sở hữu course target]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task CreateRequestUpdateAsync_ShouldThrowArgumentException_WhenTeacherDoesNotOwnCourseTarget()
+    {
+        // Arrange — course tồn tại nhưng thuộc teacher khác
+        var userId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId,
+                Teacher = new Teacher { User = new User { Id = otherTeacherId } } // khác userId
+            });
+
+        var service = CreateService();
+        var requestDto = new RequestUpdateRequestDTO
+        {
+            TargetType = "course",
+            TargetId = courseId,
+            UpdatedDataJSON = "{}"
+        };
+
+        // Act
+        Func<Task> act = async () => await service.CreateRequestUpdateAsync(userId, requestDto);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("You are not the teacher of this course.");
+        _requestUpdateRepositoryMock.Verify(repo => repo.CreateRequestUpdateRequestAsync(It.IsAny<UpdateRequestCourse>()), Times.Never);
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_RUS_08]
+    // [Mục đích: Đảm bảo CreateRequestUpdateAsync báo lỗi khi teacher không sở hữu coursecontent target]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task CreateRequestUpdateAsync_ShouldThrowArgumentException_WhenTeacherDoesNotOwnContentTarget()
+    {
+        // Arrange — content tồn tại nhưng thuộc teacher khác
+        var userId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var contentId = Guid.NewGuid().ToString();
+
+        _courseContentRepositoryMock
+            .Setup(repo => repo.GetCourseContentByIdAsync(contentId))
+            .ReturnsAsync(new CourseContent
+            {
+                Id = contentId,
+                Course = new Course
+                {
+                    Teacher = new Teacher { User = new User { Id = otherTeacherId } } // khác userId
+                }
+            });
+
+        var service = CreateService();
+        var requestDto = new RequestUpdateRequestDTO
+        {
+            TargetType = "coursecontent",
+            TargetId = contentId,
+            UpdatedDataJSON = "{}"
+        };
+
+        // Act
+        Func<Task> act = async () => await service.CreateRequestUpdateAsync(userId, requestDto);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("You are not the teacher of this course content.");
+        _requestUpdateRepositoryMock.Verify(repo => repo.CreateRequestUpdateRequestAsync(It.IsAny<UpdateRequestCourse>()), Times.Never);
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_RUS_09]
+    // [Mục đích: Đảm bảo CreateRequestUpdateAsync báo lỗi khi teacher không sở hữu lesson target]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task CreateRequestUpdateAsync_ShouldThrowArgumentException_WhenTeacherDoesNotOwnLessonTarget()
+    {
+        // Arrange — lesson tồn tại nhưng thuộc teacher khác
+        var userId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var lessonId = Guid.NewGuid().ToString();
+
+        _lessonRepositoryMock
+            .Setup(repo => repo.GetLessonByIdAsync(lessonId))
+            .ReturnsAsync(new Lesson
+            {
+                Id = lessonId,
+                CourseContent = new CourseContent
+                {
+                    Course = new Course
+                    {
+                        Teacher = new Teacher { User = new User { Id = otherTeacherId } } // khác userId
+                    }
+                }
+            });
+
+        var service = CreateService();
+        var requestDto = new RequestUpdateRequestDTO
+        {
+            TargetType = "lesson",
+            TargetId = lessonId,
+            UpdatedDataJSON = "{}"
+        };
+
+        // Act
+        Func<Task> act = async () => await service.CreateRequestUpdateAsync(userId, requestDto);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("You are not the teacher of this lesson.");
+        _requestUpdateRepositoryMock.Verify(repo => repo.CreateRequestUpdateRequestAsync(It.IsAny<UpdateRequestCourse>()), Times.Never);
+    }
 }
 

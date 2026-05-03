@@ -290,5 +290,208 @@ public class CourseContentServiceTests
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("You are not the teacher of this course");
     }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_09]
+    // [Mục đích: Đảm bảo AddCourseContentAsync báo lỗi khi userId rỗng (không có token)]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task AddCourseContentAsync_ShouldThrowUnauthorized_WhenUserIdIsEmpty()
+    {
+        // Arrange — userId = "" mô phỏng token không hợp lệ hoặc bị thiếu
+        var userId = string.Empty;
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId,
+                Status = "draft",
+                Teacher = new Teacher { User = new User { Id = "some-teacher-id" } }
+            });
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsAsync(courseId))
+            .ReturnsAsync(false);
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentCreateDTO { Title = "Content", Introduce = "Giới thiệu" };
+
+        // Act
+        Func<Task> act = async () => await service.AddCourseContentAsync(userId, courseId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User not found in token");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_10]
+    // [Mục đích: Đảm bảo AddCourseContentAsync báo lỗi khi giáo viên không sở hữu course]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task AddCourseContentAsync_ShouldThrowUnauthorized_WhenTeacherDoesNotOwnCourse()
+    {
+        // Arrange — userId khác teacher của course
+        var userId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId,
+                Status = "draft",
+                Teacher = new Teacher { User = new User { Id = otherTeacherId } }
+            });
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsAsync(courseId))
+            .ReturnsAsync(false);
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentCreateDTO { Title = "Content", Introduce = "Giới thiệu" };
+
+        // Act
+        Func<Task> act = async () => await service.AddCourseContentAsync(userId, courseId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not the teacher of this course");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_11]
+    // [Mục đích: Đảm bảo UpdateCourseContentAsync báo lỗi khi content không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateCourseContentAsync_ShouldThrowKeyNotFoundException_WhenContentDoesNotExist()
+    {
+        // Arrange — content ID không có trong DB
+        var userId = Guid.NewGuid().ToString();
+        var contentId = Guid.NewGuid().ToString();
+
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsByContentIdAsync(contentId))
+            .ReturnsAsync(false);
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentUpdateDTO { Title = "New", Introduce = "New intro" };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCourseContentAsync(userId, contentId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage("Course content not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_12]
+    // [Mục đích: Đảm bảo UpdateCourseContentAsync báo lỗi khi course không ở trạng thái draft]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateCourseContentAsync_ShouldThrowInvalidOperation_WhenCourseIsNotDraft()
+    {
+        // Arrange — course đang published nên không thể cập nhật content
+        var userId = Guid.NewGuid().ToString();
+        var contentId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsByContentIdAsync(contentId))
+            .ReturnsAsync(true);
+        _courseContentRepositoryMock
+            .Setup(repo => repo.GetCourseContentByIdAsync(contentId))
+            .ReturnsAsync(new CourseContent { Id = contentId, CourseId = courseId });
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course { Id = courseId, Status = "published" }); // không phải draft
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentUpdateDTO { Title = "New", Introduce = "New intro" };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCourseContentAsync(userId, contentId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Cannot update course content unless the course is in draft status");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_13]
+    // [Mục đích: Đảm bảo UpdateCourseContentAsync báo lỗi khi userId rỗng]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateCourseContentAsync_ShouldThrowUnauthorized_WhenUserIdIsEmpty()
+    {
+        // Arrange — userId rỗng mô phỏng thiếu token
+        var userId = string.Empty;
+        var contentId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsByContentIdAsync(contentId))
+            .ReturnsAsync(true);
+        _courseContentRepositoryMock
+            .Setup(repo => repo.GetCourseContentByIdAsync(contentId))
+            .ReturnsAsync(new CourseContent { Id = contentId, CourseId = courseId });
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId, Status = "draft",
+                Teacher = new Teacher { User = new User { Id = "some-teacher" } }
+            });
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentUpdateDTO { Title = "New", Introduce = "New" };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCourseContentAsync(userId, contentId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("User not found in token");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CCS_14]
+    // [Mục đích: Đảm bảo UpdateCourseContentAsync báo lỗi khi giáo viên không sở hữu course]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateCourseContentAsync_ShouldThrowUnauthorized_WhenTeacherDoesNotOwnCourse()
+    {
+        // Arrange — userId khác TeacherId của course
+        var userId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var contentId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+
+        _courseContentRepositoryMock
+            .Setup(repo => repo.CourseContentExistsByContentIdAsync(contentId))
+            .ReturnsAsync(true);
+        _courseContentRepositoryMock
+            .Setup(repo => repo.GetCourseContentByIdAsync(contentId))
+            .ReturnsAsync(new CourseContent { Id = contentId, CourseId = courseId });
+        _courseRepositoryMock
+            .Setup(repo => repo.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId, Status = "draft",
+                Teacher = new Teacher { User = new User { Id = otherTeacherId } }
+            });
+
+        var service = new CourseContentService(_courseContentRepositoryMock.Object, _courseRepositoryMock.Object);
+        var request = new CourseContentUpdateDTO { Title = "New", Introduce = "New" };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCourseContentAsync(userId, contentId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not the teacher of this course");
+    }
 }
 

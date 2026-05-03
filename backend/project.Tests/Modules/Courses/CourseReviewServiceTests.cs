@@ -253,6 +253,128 @@ public class CourseReviewServiceTests
         result[1].Comment.Should().Be("Xuất sắc");
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CRS_06]
+    // [Mục đích: Đảm bảo CheckReviewedCourseAsync trả về true khi student đã review]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task CheckReviewedCourseAsync_ShouldReturnTrue_WhenStudentHasAlreadyReviewed()
+    {
+        // Arrange
+        var courseId = Guid.NewGuid().ToString();
+        var studentId = Guid.NewGuid().ToString();
+        _courseReviewRepositoryMock
+            .Setup(r => r.CheckReviewedCourseAsync(courseId, studentId))
+            .ReturnsAsync(true);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.CheckReviewedCourseAsync(courseId, studentId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CRS_07]
+    // [Mục đích: Đảm bảo AddCourseReviewAsync báo lỗi khi student không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task AddCourseReviewAsync_ShouldThrowException_WhenStudentDoesNotExist()
+    {
+        // Arrange
+        var courseId = Guid.NewGuid().ToString();
+        var studentId = Guid.NewGuid().ToString();
+
+        _courseRepositoryMock
+            .Setup(r => r.GetCourseByIdAsync(courseId))
+            .ReturnsAsync(new Course { Id = courseId, Title = "Khóa học" });
+        _studentRepositoryMock
+            .Setup(r => r.IsStudentExistAsync(studentId))
+            .ReturnsAsync(false); // student không tồn tại
+
+        var service = CreateService();
+        var request = new CourseReviewCreateDTO { Rating = 5, Comment = "Tốt" };
+
+        // Act
+        Func<Task> act = async () => await service.AddCourseReviewAsync(courseId, studentId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage($"Student with id {studentId} not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CRS_08]
+    // [Mục đích: Đảm bảo UpdateCourseReviewAsync báo lỗi khi review không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateCourseReviewAsync_ShouldThrowException_WhenReviewDoesNotExist()
+    {
+        // Arrange
+        var reviewId = Guid.NewGuid().ToString();
+        _courseReviewRepositoryMock
+            .Setup(r => r.CourseReviewExistsAsync(reviewId))
+            .ReturnsAsync(false); // review không tồn tại
+
+        var service = CreateService();
+        var request = new CourseReviewUpdateDTO { Comment = "Cập nhật" };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCourseReviewAsync(reviewId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage($"Review with id {reviewId} not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CRS_09]
+    // [Mục đích: Đảm bảo GetAllReviewsByCourseIdAsync báo lỗi khi course không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetAllReviewsByCourseIdAsync_ShouldThrowException_WhenCourseDoesNotExist()
+    {
+        // Arrange
+        var courseId = Guid.NewGuid().ToString();
+        _courseRepositoryMock
+            .Setup(r => r.CourseExistsAsync(courseId))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetAllReviewsByCourseIdAsync(courseId);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage($"Course with id {courseId} not found");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_CRS_10]
+    // [Mục đích: Đảm bảo GetReviewsByStudentIdAsync báo lỗi khi student không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetReviewsByStudentIdAsync_ShouldThrowException_WhenStudentDoesNotExist()
+    {
+        // Arrange
+        var studentId = Guid.NewGuid().ToString();
+        _studentRepositoryMock
+            .Setup(r => r.IsStudentExistAsync(studentId))
+            .ReturnsAsync(false);
+
+        var service = CreateService();
+
+        // Act
+        Func<Task> act = async () => await service.GetReviewsByStudentIdAsync(studentId);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage($"Student with id {studentId} not found");
+    }
+
     private CourseReviewService CreateService()
     {
         return new CourseReviewService(

@@ -781,6 +781,127 @@ public class CourseServiceTests
             .WithMessage("Error when retriev enrolled courses: *");
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_COS_21]
+    // [Mục đích: Đảm bảo UpdateFullCourseAsync báo lỗi khi teacher không sở hữu course]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task UpdateFullCourseAsync_ShouldThrowUnauthorized_WhenTeacherDoesNotOwnCourse()
+    {
+        // Arrange
+        var teacherId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var service = CreateService();
+
+        _courseRepositoryMock
+            .Setup(r => r.GetCourseByStatusAsync(courseId, "draft"))
+            .ReturnsAsync(new Course
+            {
+                Id = courseId, Status = "draft",
+                TeacherId = otherTeacherId // teacher khác
+            });
+
+        var request = new FullCourseUpdateDTO
+        {
+            Title = "New", CategoryId = "cat-1", Price = 100,
+            CourseContent = new FullCourseContentUpdateDTO { Title = "C", Introduce = "I", Lessons = [] }
+        };
+
+        // Act
+        Func<Task> act = async () => await service.UpdateFullCourseAsync(teacherId, courseId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not the teacher of this course");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_COS_22]
+    // [Mục đích: Đảm bảo RequestPublishCourseAsync báo lỗi khi teacher không sở hữu course (draft check)]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task RequestPublishCourseAsync_ShouldThrowUnauthorized_WhenDraftCourseTeacherMismatch()
+    {
+        // Arrange
+        var teacherId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var service = CreateService();
+
+        _courseRepositoryMock
+            .Setup(r => r.GetCourseByStatusAsync(courseId, "draft"))
+            .ReturnsAsync(new Course { Id = courseId, Status = "draft", TeacherId = otherTeacherId });
+
+        // Act
+        Func<Task> act = async () => await service.RequestPublishCourseAsync(teacherId, courseId);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not the teacher of this course");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_COS_23]
+    // [Mục đích: Đảm bảo GetFullCourseDataForEditAsync báo lỗi khi teacher không khớp course]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task GetFullCourseDataForEditAsync_ShouldThrowUnauthorized_WhenTeacherDoesNotOwnCourse()
+    {
+        // Arrange
+        var teacherId = Guid.NewGuid().ToString();
+        var otherTeacherId = Guid.NewGuid().ToString();
+        var courseId = Guid.NewGuid().ToString();
+        var service = CreateService();
+
+        _teacherRepositoryMock
+            .Setup(r => r.IsTeacherExistsAsync(teacherId))
+            .ReturnsAsync(true);
+        _courseRepositoryMock
+            .Setup(r => r.GetCourseByIdByTeacherAsync(courseId, teacherId))
+            .ReturnsAsync(new Course { Id = courseId, TeacherId = otherTeacherId }); // teacher khác
+
+        // Act
+        Func<Task> act = async () => await service.GetFullCourseDataForEditAsync(teacherId, courseId);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("You are not the teacher of this course");
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // [ID: SERV_COS_24]
+    // [Mục đích: Đảm bảo AddFullCourseAsync báo lỗi khi category không tồn tại]
+    // ------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task AddFullCourseAsync_ShouldThrowKeyNotFoundException_WhenCategoryDoesNotExist()
+    {
+        // Arrange — category không có trong DB
+        var teacherId = Guid.NewGuid().ToString();
+        var nonExistentCategoryId = Guid.NewGuid().ToString();
+        var service = CreateService();
+
+        _teacherRepositoryMock
+            .Setup(r => r.IsTeacherExistsAsync(teacherId))
+            .ReturnsAsync(true);
+        _categoryRepositoryMock
+            .Setup(r => r.GetCategoryByIdAsync(nonExistentCategoryId))
+            .ReturnsAsync((Category?)null); // category null → throw
+
+        var request = new FullCourseCreateDTO
+        {
+            Title = "Khóa học", CategoryId = nonExistentCategoryId, Price = 100,
+            CourseContent = new FullCourseContentCreateDTO { Title = "C", Introduce = "I", Lessons = [] }
+        };
+
+        // Act
+        Func<Task> act = async () => await service.AddFullCourseAsync(teacherId, request);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>()
+            .WithMessage($"Category with id {nonExistentCategoryId} not found.");
+    }
+
     private CourseService CreateService()
     {
         var dbContext = CourseTestHelpers.CreateInMemoryDbContext("CourseServiceMockTests");
