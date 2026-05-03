@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = project.Tests
-build_property.ProjectDir = C:\SQA\SQA03_Nhom12\backend\project.Tests\
+build_property.ProjectDir = D:\PTIT\nam4hk2\DBCLPM\projectSQA\SQA03_Nhom12\backend\project.Tests\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

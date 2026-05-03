@@ -1,0 +1,29 @@
+Summary
+  Generated on: 03/05/2026 - 21:07:15
+  Coverage date: 03/05/2026 - 21:07:05
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 7
+  Files: 7
+  Line coverage: 71%
+  Covered lines: 727
+  Uncovered lines: 296
+  Coverable lines: 1023
+  Total lines: 1423
+  Branch coverage: 42.9% (152 of 354)
+  Covered branches: 152
+  Total branches: 354
+  Method coverage: 84% (37 of 44)
+  Full method coverage: 34% (15 of 44)
+  Covered methods: 37
+  Fully covered methods: 15
+  Total methods: 44
+
+project                       71%
+  CategoryService            100%
+  CourseContentService      60.4%
+  CourseReviewService       89.1%
+  CourseService             66.5%
+  EnrollmentCourseService   62.5%
+  LessonService             87.1%
+  RequestUpdateService      81.2%

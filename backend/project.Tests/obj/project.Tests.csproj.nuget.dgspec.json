@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\SQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj": {}
+    "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj": {}
   },
   "projects": {
-    "C:\\SQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj": {
+    "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\SQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj",
+        "projectUniqueName": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj",
         "projectName": "project.Tests",
-        "projectPath": "C:\\SQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj",
-        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\SQA\\SQA03_Nhom12\\backend\\project.Tests\\obj\\",
+        "projectPath": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project.Tests\\project.Tests.csproj",
+        "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
+        "outputPath": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -26,8 +26,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\SQA\\SQA03_Nhom12\\backend\\project\\project.csproj": {
-                "projectPath": "C:\\SQA\\SQA03_Nhom12\\backend\\project\\project.csproj"
+              "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\project.csproj": {
+                "projectPath": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\project.csproj"
               }
             }
           }
@@ -104,17 +104,17 @@
         }
       }
     },
-    "C:\\SQA\\SQA03_Nhom12\\backend\\project\\project.csproj": {
+    "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\project.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\SQA\\SQA03_Nhom12\\backend\\project\\project.csproj",
+        "projectUniqueName": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\project.csproj",
         "projectName": "project",
-        "projectPath": "C:\\SQA\\SQA03_Nhom12\\backend\\project\\project.csproj",
-        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\SQA\\SQA03_Nhom12\\backend\\project\\obj\\",
+        "projectPath": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\project.csproj",
+        "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
+        "outputPath": "D:\\PTIT\\nam4hk2\\DBCLPM\\projectSQA\\SQA03_Nhom12\\backend\\project\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
